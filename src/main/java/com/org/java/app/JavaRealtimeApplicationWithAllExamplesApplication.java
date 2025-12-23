@@ -15,7 +15,6 @@ public class JavaRealtimeApplicationWithAllExamplesApplication extends SpringBoo
 
 	public static void main(String[] args) {
 		SpringApplication.run(JavaRealtimeApplicationWithAllExamplesApplication.class, args);
-		System.out.println("hello");
 	
 	}
 
