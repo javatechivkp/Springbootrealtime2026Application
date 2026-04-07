@@ -12,7 +12,6 @@ spring:
     hibernate:
       ddl-auto: update
     database-platform: org.hibernate.dialect.MySQL8Dialect
-
   mail:
     host: smtp.gmail.com   # or smtp.office365.com
     port: 587
