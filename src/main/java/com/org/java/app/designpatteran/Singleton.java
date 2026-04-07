@@ -18,8 +18,5 @@ public class Singleton implements Serializable,Cloneable
 		}
 		return singleton;
 	}
-	@Override
-	public Singleton clone() throws CloneNotSupportedException {
-		return (Singleton) super.clone();
-	}
+	
 }

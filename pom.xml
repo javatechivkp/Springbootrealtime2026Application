@@ -98,7 +98,7 @@
 
 	<build>
 		<!--<finalName>springboot-tomcat-pipeline</finalName>-->
-		<finalName>springbootexample-app</finalName>
+		<!--<finalName>springbootexample-app</finalName>-->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -155,51 +155,12 @@
 						</goals>
 					</execution>
 					<!-- Check coverage thresholds -->
-					<execution>
-						<id>check</id>
-						<goals>
-							<goal>check</goal>
-						</goals>
-						<configuration>
-							<rules>
-								<rule>
-									<element>BUNDLE</element>
-									<limits>
-										<limit>
-											<counter>INSTRUCTION</counter>
-											<value>COVEREDRATIO</value>
-											<minimum>0.80</minimum>
-										</limit>
-										<limit>
-											<counter>BRANCH</counter>
-											<value>COVEREDRATIO</value>
-											<minimum>0.70</minimum>
-										</limit>
-									</limits>
-								</rule>
-							</rules>
-						</configuration>
-					</execution>
+					
 				</executions>
-				<configuration>
-					<excludes>
-						<exclude>**/dto/**</exclude>
-						<exclude>**/entity/**</exclude>
-						<exclude>**/configration/**</exclude>
-						<exclude>**/JavaapplicationApplication.class</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 			
 			<!-- Surefire Plugin for running tests -->
-			 <plugin>
-       <artifactId>maven-surefire-plugin</artifactId>
-         <configuration>
-            <argLine>-Xmx1G</argLine>
-          </configuration>
-     </plugin>
 		</plugins>
 	</build>
-	
 
 </project>

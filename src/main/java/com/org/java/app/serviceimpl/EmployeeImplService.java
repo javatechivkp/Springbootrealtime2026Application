@@ -16,8 +16,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import com.org.java.app.dto.CursorPageResponse;
 import com.org.java.app.dto.EmployeeDto;
 import com.org.java.app.entity.Employee;
 import com.org.java.app.exception.NoDataAvailableException;
@@ -56,25 +60,20 @@ public class EmployeeImplService implements EmployeeService {
 
 	
 	@Override
-	public Employee findByIdEmployeeDetails(int empId) {
-		Employee findIds = employeeRepository.findByEmpId(empId)
-				.orElseThrow(() -> new NoDataAvailableException("No data prasent given id::" + empId));
-		return findIds;
-	}
-	
-
-	@Override
 	public List<EmployeeDto> findAllEmployeeDetails() {
 		List<Employee> list = employeeRepository.findAll();
 		System.out.println(list);
 		return list.stream().map((user) -> EmployeeMapper.INSTANCE.employeeToEmployeeDto(user))
 				.collect(Collectors.toList());
 	}
+	
+	@Override
+	public Employee findByIdEmployeeDetails(int empId) {
+		Employee findIds = employeeRepository.findByEmpId(empId)
+				.orElseThrow(() -> new NoDataAvailableException("No data prasent given id::" + empId));
+		return findIds;
+	}
 
-	
-	
-
-	
 	@Override
 	public List<Employee> findByEmployedeptNameDeatails(String deptName) {
 		// TODO Auto-generated method stub
@@ -85,7 +84,7 @@ public class EmployeeImplService implements EmployeeService {
 		return findByDeptName;
 	}
 
-	
+
 	@Override
 	public List<Employee> findByEmployeeSalaryAscDeatails() {
 		List<Employee> list = employeeRepository.findAll();
@@ -296,14 +295,6 @@ public class EmployeeImplService implements EmployeeService {
 		return list;
 	}
 
-	@Override
-	public Employee findByEmpIdAndNameAndDeptNameDeatails(int empId, String empName, String deptName) {
-		Employee list = employeeRepository.findByEmpIdAndEmpNameAndDeptName(empId, empName, deptName);
-		if (list == null || list.getEmpName() == null || list.getEmpName().isEmpty()) {
-			throw new NoDataAvailableException("No Data available" + list);
-		}
-		return list;
-	}
 
 	@Override
 	public String firstnonRepeactedCharacterInStringDeatails() {
@@ -583,4 +574,35 @@ public class EmployeeImplService implements EmployeeService {
 		return list;
 	}
 
-}
+	@Override
+	public CursorPageResponse<Employee> getEmployees(Integer cursor, int size) {
+		//default page = 0, size = 10 [0-9]
+        Pageable pageable = PageRequest.of(0, size);
+
+        //fetch next page records
+        List<Employee> items = employeeRepository.findByFeatchAllRecords(cursor, pageable);
+
+        //check if we have more records
+        boolean hasNext = items.size() == size;
+
+        //determine the next cursor
+
+        Integer nextCursor = hasNext
+                ? items.get(items.size() - 1).getEmpId()
+                : null;
+
+        return new CursorPageResponse<>(
+                items,
+                size,
+                nextCursor,
+                hasNext
+        );
+	}
+
+	@Override
+	public Page<Employee> getEmployeesList(int page, int size) {
+		 return employeeRepository
+	                .findAll(PageRequest.of(page, size));
+	    }
+	}
+

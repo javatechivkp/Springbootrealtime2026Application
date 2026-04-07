@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.org.java.app.dto.CursorPageResponse;
 import com.org.java.app.dto.EmployeeDto;
 import com.org.java.app.entity.Employee;
 import com.org.java.app.service.EmployeeService;
@@ -76,6 +78,55 @@ public class EmployeeController {
 		return new ResponseEntity("Sucessfully deleted from DB", HttpStatus.NO_CONTENT);
 	}
 
+	@GetMapping("/findAll")
+	public ResponseEntity<?> findAllEmployee(@RequestHeader(name = "X-request-Source") String SouceSystem) {
+		// logger.info("getting start the records for fetching");
+		// List<EmployeeDto> list = employeeService.findAllEmployeeDetails();
+		// logger.info("got all the records"+list);
+		return switch (SouceSystem.toLowerCase()) {
+		case "test" -> findAllEmployee();
+		default -> ResponseEntity.internalServerError().body("Unknown source system: " + SouceSystem);
+		};
+	}
+	
+	@GetMapping("/report/pdf")
+	public ResponseEntity<byte[]> downloadEmployeesPdf() {
+		// Reuse existing service to fetch all employees as DTOs, then map to entity shape used by PdfGenerator
+		var dtos = employeeService.findAllEmployeeDetails();
+		var employees = dtos.stream().map(dto -> EmployeeMapper.INSTANCE.employeeDtoToEmployee(dto)).collect(Collectors.toList());
+		byte[] pdf = PdfGenerator.generateEmployeesPdf(employees);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=employees.pdf")
+				.contentType(MediaType.APPLICATION_PDF)
+				.body(pdf);
+	}
+
+	@GetMapping("/report/excel")
+	public ResponseEntity<byte[]> downloadEmployeesExcel() {
+		var dtos = employeeService.findAllEmployeeDetails();
+		var employees = dtos.stream().map(dto -> EmployeeMapper.INSTANCE.employeeDtoToEmployee(dto)).collect(Collectors.toList());
+		byte[] xlsx = ExcelGenerator.generateEmployeesExcel(employees);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=employees.xlsx")
+				.contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+				.body(xlsx);
+	}
+
+	@PostMapping("/report/email")
+	public ResponseEntity<String> emailEmployeesPdf( String to) {
+		try {
+			var dtos = employeeService.findAllEmployeeDetails();
+			var employees = dtos.stream().map(dto -> EmployeeMapper.INSTANCE.employeeDtoToEmployee(dto)).collect(Collectors.toList());
+			byte[] pdf = PdfGenerator.generateEmployeesPdf(employees);
+			emailSender.sendPdf(to, "Employees Report", "<p>Please find attached the latest employees report.</p>", pdf, "employees.pdf");
+			return ResponseEntity.ok("Email sent to " + to);
+		} catch (MessagingException ex) {
+			return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Email sending failed: " + ex.getMessage());
+		} catch (Exception ex) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + ex.getMessage());
+		}
+	}
+
 	@GetMapping("/findById/{id}")
 	public ResponseEntity<?> findByIdData(@PathVariable("id") int empId,
 			@RequestHeader(name = "x-Request-Source") String sourceSystem) {
@@ -106,16 +157,7 @@ public class EmployeeController {
 		return new ResponseEntity(emp, HttpStatus.OK);
 	}
 
-	@GetMapping("/findAll")
-	public ResponseEntity<?> findAllEmployee(@RequestHeader(name = "X-request-Source") String SouceSystem) {
-		// logger.info("getting start the records for fetching");
-		// List<EmployeeDto> list = employeeService.findAllEmployeeDetails();
-		// logger.info("got all the records"+list);
-		return switch (SouceSystem.toLowerCase()) {
-		case "test" -> findAllEmployee();
-		default -> ResponseEntity.internalServerError().body("Unknown source system: " + SouceSystem);
-		};
-	}
+
 
 	private ResponseEntity<List<EmployeeDto>> findAllEmployee() {
 		return ResponseEntity.ok(employeeService.findAllEmployeeDetails());
@@ -138,13 +180,6 @@ public class EmployeeController {
 	public ResponseEntity<Employee> findByNameAndDeptName(@PathVariable("empName") String empName,
 			@PathVariable("deptName") String deptName) {
 		Employee emplist = employeeService.findByNameAndDeptNameDeatails(empName, deptName);
-		return new ResponseEntity(emplist, HttpStatus.OK);
-	}
-
-	@GetMapping("/findByEmpIdAndNameAndDeptName/{empId}/{empName}/{deptName}")
-	public ResponseEntity<Employee> findByEmpIdAndNameAndDeptName(@PathVariable("empId") int empId,
-			@PathVariable("empName") String empName, @PathVariable("deptName") String deptName) {
-		Employee emplist = employeeService.findByEmpIdAndNameAndDeptNameDeatails(empId, empName, deptName);
 		return new ResponseEntity(emplist, HttpStatus.OK);
 	}
 
@@ -359,43 +394,6 @@ public class EmployeeController {
 		return new ResponseEntity(names, HttpStatus.OK);
 	}
 
-	@GetMapping("/report/pdf")
-	public ResponseEntity<byte[]> downloadEmployeesPdf() {
-		// Reuse existing service to fetch all employees as DTOs, then map to entity shape used by PdfGenerator
-		var dtos = employeeService.findAllEmployeeDetails();
-		var employees = dtos.stream().map(dto -> EmployeeMapper.INSTANCE.employeeDtoToEmployee(dto)).collect(Collectors.toList());
-		byte[] pdf = PdfGenerator.generateEmployeesPdf(employees);
-		return ResponseEntity.ok()
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=employees.pdf")
-				.contentType(MediaType.APPLICATION_PDF)
-				.body(pdf);
-	}
-
-	@GetMapping("/report/excel")
-	public ResponseEntity<byte[]> downloadEmployeesExcel() {
-		var dtos = employeeService.findAllEmployeeDetails();
-		var employees = dtos.stream().map(dto -> EmployeeMapper.INSTANCE.employeeDtoToEmployee(dto)).collect(Collectors.toList());
-		byte[] xlsx = ExcelGenerator.generateEmployeesExcel(employees);
-		return ResponseEntity.ok()
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=employees.xlsx")
-				.contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-				.body(xlsx);
-	}
-
-	@PostMapping("/report/email")
-	public ResponseEntity<String> emailEmployeesPdf( String to) {
-		try {
-			var dtos = employeeService.findAllEmployeeDetails();
-			var employees = dtos.stream().map(dto -> EmployeeMapper.INSTANCE.employeeDtoToEmployee(dto)).collect(Collectors.toList());
-			byte[] pdf = PdfGenerator.generateEmployeesPdf(employees);
-			emailSender.sendPdf(to, "Employees Report", "<p>Please find attached the latest employees report.</p>", pdf, "employees.pdf");
-			return ResponseEntity.ok("Email sent to " + to);
-		} catch (MessagingException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Email sending failed: " + ex.getMessage());
-		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + ex.getMessage());
-		}
-	}
 
 	@GetMapping("/listToSetConversion")
 	public ResponseEntity<Employee> listToSetConversion() {
@@ -432,6 +430,25 @@ public class EmployeeController {
 		Set<Entry<Integer, Employee>> mapToSetConversion = employeeService.mapToSetConversionDetails();
 		return new ResponseEntity(mapToSetConversion, HttpStatus.OK);
 	}
+
+    @GetMapping("/cursor")
+    public CursorPageResponse<Employee> list(
+            @RequestParam(required = false) Integer cursor,
+            @RequestParam(defaultValue = "1") int size
+    ) {
+        return employeeService.getEmployees(cursor, size);
+    }
+
+    @GetMapping("/pagination")
+    public ResponseEntity<Page<Employee>> listProducts(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
+
+        Page<Employee> products = employeeService.getEmployeesList(page, size);
+        System.out.println(products);
+        return ResponseEntity.ok(products);
+        
+    }
 
 
 

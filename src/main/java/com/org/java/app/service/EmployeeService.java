@@ -6,8 +6,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import com.org.java.app.dto.CursorPageResponse;
 import com.org.java.app.dto.EmployeeDto;
 import com.org.java.app.entity.Employee;
 
@@ -69,8 +71,6 @@ public interface EmployeeService {
 
 	Employee findByNameAndDeptNameDeatails(String empName, String deptName);
 
-	Employee findByEmpIdAndNameAndDeptNameDeatails(int empId, String empName, String deptName);
-
 	String firstnonRepeactedCharacterInStringDeatails();
 
 	String firstRepeactedCharacterInStringDeatails();
@@ -118,6 +118,10 @@ public interface EmployeeService {
 	List<EmployeeDto> findByEmployeeBetweenSalaryDeatails();
 
 	Map<String, Long> findBygroupCountDeatails();
+	
+	CursorPageResponse<Employee> getEmployees(Integer cursor,int size);
+
+	public Page<Employee> getEmployeesList(int page, int size);
 
 
 }
