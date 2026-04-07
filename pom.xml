@@ -13,7 +13,7 @@
 	<artifactId>JAVAAPPLICATION</artifactId>
 	<!--<packaging>war</packaging>-->
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>JAVAAPPLICATION</name>
 	<description>Demo project for Spring Boot</description>
 	<url />
@@ -97,7 +97,7 @@
 	</dependencies>
 
 	<build>
-		<!--<finalName>springboot-tomcat-pipeline</finalName>-->
+		<finalName>springbootexample-app</finalName>
 		<!--<finalName>springbootexample-app</finalName>-->
 		<plugins>
 			<plugin>
